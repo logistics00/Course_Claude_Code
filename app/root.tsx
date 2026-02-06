@@ -9,6 +9,9 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import { getAllUsers, getUserById } from "~/services/userService";
+import { getCurrentUserId } from "~/lib/session";
+import { DevUI } from "~/components/dev-ui";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -41,8 +44,28 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
-  return <Outlet />;
+export async function loader({ request }: Route.LoaderArgs) {
+  const users = getAllUsers();
+  const currentUserId = await getCurrentUserId(request);
+  const currentUser = currentUserId ? getUserById(currentUserId) : null;
+
+  return {
+    users: users.map((u) => ({ id: u.id, name: u.name, role: u.role })),
+    currentUser: currentUser
+      ? { id: currentUser.id, name: currentUser.name, role: currentUser.role }
+      : null,
+  };
+}
+
+export default function App({ loaderData }: Route.ComponentProps) {
+  const { users, currentUser } = loaderData;
+
+  return (
+    <>
+      <Outlet />
+      <DevUI users={users} currentUser={currentUser} />
+    </>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

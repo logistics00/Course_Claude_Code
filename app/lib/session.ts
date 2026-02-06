@@ -1,0 +1,27 @@
+import { createCookieSessionStorage } from "react-router";
+
+const sessionStorage = createCookieSessionStorage({
+  cookie: {
+    name: "ralph_session",
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    secrets: ["ralph-dev-secret"],
+  },
+});
+
+export async function getSession(request: Request) {
+  return sessionStorage.getSession(request.headers.get("Cookie"));
+}
+
+export async function getCurrentUserId(request: Request): Promise<number | null> {
+  const session = await getSession(request);
+  const userId = session.get("userId");
+  return typeof userId === "number" ? userId : null;
+}
+
+export async function setCurrentUserId(request: Request, userId: number) {
+  const session = await getSession(request);
+  session.set("userId", userId);
+  return sessionStorage.commitSession(session);
+}
