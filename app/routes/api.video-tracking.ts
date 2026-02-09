@@ -1,7 +1,15 @@
 import { data } from "react-router";
+import { z } from "zod";
 import type { Route } from "./+types/api.video-tracking";
 import { getCurrentUserId } from "~/lib/session";
 import { logWatchEvent } from "~/services/videoTrackingService";
+import { parseJsonBody } from "~/lib/validation";
+
+const videoTrackingSchema = z.object({
+  lessonId: z.number(),
+  eventType: z.string(),
+  positionSeconds: z.number(),
+});
 
 export async function action({ request }: Route.ActionArgs) {
   const currentUserId = await getCurrentUserId(request);
@@ -9,14 +17,13 @@ export async function action({ request }: Route.ActionArgs) {
     throw data("Unauthorized", { status: 401 });
   }
 
-  const body = await request.json();
-  const lessonId = Number(body.lessonId);
-  const eventType = String(body.eventType);
-  const positionSeconds = Number(body.positionSeconds);
+  const parsed = await parseJsonBody(request, videoTrackingSchema);
 
-  if (isNaN(lessonId) || isNaN(positionSeconds)) {
+  if (!parsed.success) {
     throw data("Invalid parameters", { status: 400 });
   }
+
+  const { lessonId, eventType, positionSeconds } = parsed.data;
 
   logWatchEvent(currentUserId, lessonId, eventType, positionSeconds);
 

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useFetcher } from "react-router";
 import { toast } from "sonner";
+import { z } from "zod";
 import type { Route } from "./+types/admin.courses";
 import {
   getAllCourses,
@@ -10,6 +11,7 @@ import {
 import { getEnrollmentCountForCourse } from "~/services/enrollmentService";
 import { getCurrentUserId } from "~/lib/session";
 import { getUserById } from "~/services/userService";
+import { parseFormData } from "~/lib/validation";
 import { UserRole, CourseStatus } from "~/db/schema";
 import { Card, CardContent } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -23,6 +25,14 @@ import {
 } from "~/components/ui/select";
 import { AlertTriangle, BookOpen, Users } from "lucide-react";
 import { data, isRouteErrorResponse, Link } from "react-router";
+
+const adminCourseActionSchema = z.discriminatedUnion("intent", [
+  z.object({
+    intent: z.literal("update-status"),
+    courseId: z.coerce.number().int(),
+    status: z.nativeEnum(CourseStatus),
+  }),
+]);
 
 export function meta() {
   return [
@@ -72,21 +82,16 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   const formData = await request.formData();
-  const intent = formData.get("intent") as string;
+  const parsed = parseFormData(formData, adminCourseActionSchema);
+
+  if (!parsed.success) {
+    return data({ error: Object.values(parsed.errors)[0] ?? "Invalid input." }, { status: 400 });
+  }
+
+  const { intent } = parsed.data;
 
   if (intent === "update-status") {
-    const courseId = parseInt(formData.get("courseId") as string, 10);
-    const status = formData.get("status") as CourseStatus;
-    if (isNaN(courseId)) {
-      return data({ error: "Invalid course ID." }, { status: 400 });
-    }
-    if (
-      !status ||
-      ![CourseStatus.Draft, CourseStatus.Published, CourseStatus.Archived].includes(status)
-    ) {
-      return data({ error: "Invalid status." }, { status: 400 });
-    }
-    updateCourseStatus(courseId, status);
+    updateCourseStatus(parsed.data.courseId, parsed.data.status);
     return { success: true };
   }
 

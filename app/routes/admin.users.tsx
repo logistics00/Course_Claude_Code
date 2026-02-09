@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from "react";
 import { useFetcher } from "react-router";
 import { toast } from "sonner";
+import { z } from "zod";
 import type { Route } from "./+types/admin.users";
 import { getAllUsers, updateUser, updateUserRole } from "~/services/userService";
 import { getCurrentUserId } from "~/lib/session";
 import { getUserById } from "~/services/userService";
+import { parseFormData } from "~/lib/validation";
 import { UserRole } from "~/db/schema";
 import { Card, CardContent, CardHeader } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -18,6 +20,20 @@ import {
 } from "~/components/ui/select";
 import { AlertTriangle, Pencil, Shield, Users } from "lucide-react";
 import { data, isRouteErrorResponse, Link } from "react-router";
+
+const adminUserActionSchema = z.discriminatedUnion("intent", [
+  z.object({
+    intent: z.literal("update-user"),
+    userId: z.coerce.number().int(),
+    name: z.string().trim().min(1, "Name cannot be empty."),
+    email: z.string().trim().min(1, "Email cannot be empty."),
+  }),
+  z.object({
+    intent: z.literal("update-role"),
+    userId: z.coerce.number().int(),
+    role: z.nativeEnum(UserRole),
+  }),
+]);
 
 export function meta() {
   return [
@@ -61,38 +77,23 @@ export async function action({ request }: Route.ActionArgs) {
   }
 
   const formData = await request.formData();
-  const intent = formData.get("intent") as string;
+  const parsed = parseFormData(formData, adminUserActionSchema);
+
+  if (!parsed.success) {
+    return data({ error: Object.values(parsed.errors)[0] ?? "Invalid input." }, { status: 400 });
+  }
+
+  const { intent } = parsed.data;
 
   if (intent === "update-user") {
-    const userId = parseInt(formData.get("userId") as string, 10);
-    const name = (formData.get("name") as string)?.trim();
-    const email = (formData.get("email") as string)?.trim();
-    if (isNaN(userId)) {
-      return data({ error: "Invalid user ID." }, { status: 400 });
-    }
-    if (!name) {
-      return data({ error: "Name cannot be empty." }, { status: 400 });
-    }
-    if (!email) {
-      return data({ error: "Email cannot be empty." }, { status: 400 });
-    }
+    const { userId, name, email } = parsed.data;
     const user = getUserById(userId);
     updateUser(userId, name, email, user?.bio ?? null);
     return { success: true };
   }
 
   if (intent === "update-role") {
-    const userId = parseInt(formData.get("userId") as string, 10);
-    const role = formData.get("role") as UserRole;
-    if (isNaN(userId)) {
-      return data({ error: "Invalid user ID." }, { status: 400 });
-    }
-    if (
-      !role ||
-      ![UserRole.Student, UserRole.Instructor, UserRole.Admin].includes(role)
-    ) {
-      return data({ error: "Invalid role." }, { status: 400 });
-    }
+    const { userId, role } = parsed.data;
     updateUserRole(userId, role);
     return { success: true };
   }
