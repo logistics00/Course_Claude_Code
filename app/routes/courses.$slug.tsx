@@ -93,7 +93,7 @@ export async function action({ params, request }: Route.ActionArgs) {
 
 export function HydrateFallback() {
   return (
-    <div className="p-6 lg:p-8">
+    <div className="mx-auto max-w-7xl p-6 lg:p-8">
       <nav className="mb-6">
         <Skeleton className="h-4 w-48" />
       </nav>
@@ -180,7 +180,7 @@ export default function CourseDetail({ loaderData }: Route.ComponentProps) {
   );
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="mx-auto max-w-7xl p-6 lg:p-8">
       {/* Breadcrumb */}
       <nav className="mb-6 text-sm text-muted-foreground">
         <Link to="/courses" className="hover:text-foreground">

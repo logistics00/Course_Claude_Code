@@ -86,7 +86,7 @@ function statusBadge(status: string) {
 
 export function HydrateFallback() {
   return (
-    <div className="p-6 lg:p-8">
+    <div className="mx-auto max-w-7xl p-6 lg:p-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
           <Skeleton className="h-9 w-40" />
@@ -124,7 +124,7 @@ export default function InstructorDashboard({
   const { courses } = loaderData;
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="mx-auto max-w-7xl p-6 lg:p-8">
       {/* Breadcrumb */}
       <nav className="mb-6 text-sm text-muted-foreground">
         <Link to="/" className="hover:text-foreground">

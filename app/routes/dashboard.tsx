@@ -86,7 +86,7 @@ function DashboardCardSkeleton() {
 
 export function HydrateFallback() {
   return (
-    <div className="p-6 lg:p-8">
+    <div className="mx-auto max-w-7xl p-6 lg:p-8">
       <div className="mb-8">
         <Skeleton className="h-9 w-48" />
         <Skeleton className="mt-2 h-5 w-64" />
@@ -106,7 +106,7 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
   const totalCourses = inProgressCourses.length + completedCourses.length;
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="mx-auto max-w-7xl p-6 lg:p-8">
       {/* Breadcrumb */}
       <nav className="mb-6 text-sm text-muted-foreground">
         <Link to="/" className="hover:text-foreground">

@@ -214,7 +214,7 @@ function CourseRowSkeleton() {
 
 export function HydrateFallback() {
   return (
-    <div className="p-6 lg:p-8">
+    <div className="mx-auto max-w-7xl p-6 lg:p-8">
       <div className="mb-8">
         <Skeleton className="h-9 w-52" />
         <Skeleton className="mt-2 h-5 w-72" />
@@ -250,7 +250,7 @@ export default function AdminCourses({ loaderData }: Route.ComponentProps) {
   const { courses } = loaderData;
 
   return (
-    <div className="p-6 lg:p-8">
+    <div className="mx-auto max-w-7xl p-6 lg:p-8">
       {/* Breadcrumb */}
       <nav className="mb-6 text-sm text-muted-foreground">
         <Link to="/" className="hover:text-foreground">
