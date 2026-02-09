@@ -15,6 +15,7 @@ import {
   updateCourseStatus,
   updateCourseSalesCopy,
   updateCoursePrice,
+  updateCoursePppEnabled,
   getLessonCountForCourse,
 } from "~/services/courseService";
 import {
@@ -61,6 +62,7 @@ import {
   Trash2,
   Users,
   AlertTriangle,
+  Globe,
 } from "lucide-react";
 import { data, isRouteErrorResponse } from "react-router";
 
@@ -184,6 +186,12 @@ export async function action({ params, request }: Route.ActionArgs) {
     const priceCents = Math.round(priceDollars * 100);
     updateCoursePrice(courseId, priceCents);
     return { success: true, field: "price" };
+  }
+
+  if (intent === "update-ppp-enabled") {
+    const pppEnabled = formData.get("pppEnabled") === "true";
+    updateCoursePppEnabled(courseId, pppEnabled);
+    return { success: true, field: "ppp-enabled" };
   }
 
   if (intent === "add-module") {
@@ -968,6 +976,7 @@ export default function InstructorCourseEditor({
   const lessonReorderFetcher = useFetcher();
   const salesCopyFetcher = useFetcher();
   const priceFetcher = useFetcher();
+  const pppFetcher = useFetcher();
 
   const [salesCopy, setSalesCopy] = useState(course.salesCopy ?? "");
   const salesCopyHasChanges = salesCopy !== (course.salesCopy ?? "");
@@ -1016,6 +1025,15 @@ export default function InstructorCourseEditor({
       toast.error(priceFetcher.data.error);
     }
   }, [priceFetcher.state, priceFetcher.data]);
+
+  useEffect(() => {
+    if (pppFetcher.state === "idle" && pppFetcher.data?.success) {
+      toast.success("PPP setting updated.");
+    }
+    if (pppFetcher.state === "idle" && pppFetcher.data?.error) {
+      toast.error(pppFetcher.data.error);
+    }
+  }, [pppFetcher.state, pppFetcher.data]);
 
   function handleSalesCopySave() {
     salesCopyFetcher.submit(
@@ -1192,6 +1210,32 @@ export default function InstructorCourseEditor({
               }}
             />
           </div>
+        </div>
+
+        <div className="flex items-center gap-2" title="Purchasing Power Parity: applies location-based discounts for students in lower-income countries">
+          <Globe className="size-4 text-muted-foreground" />
+          <span className="text-sm font-medium">PPP:</span>
+          <button
+            type="button"
+            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              course.pppEnabled ? "bg-primary" : "bg-muted"
+            }`}
+            onClick={() => {
+              pppFetcher.submit(
+                { intent: "update-ppp-enabled", pppEnabled: String(!course.pppEnabled) },
+                { method: "post" }
+              );
+            }}
+          >
+            <span
+              className={`inline-block size-4 transform rounded-full bg-white transition-transform ${
+                course.pppEnabled ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+          <span className="text-xs text-muted-foreground">
+            {course.pppEnabled ? "On" : "Off"}
+          </span>
         </div>
 
         <Link to={`/courses/${course.slug}`}>
