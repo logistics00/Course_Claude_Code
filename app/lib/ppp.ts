@@ -43,6 +43,38 @@ export function getCountryTierInfo(countryCode: string | null) {
   return { tier, discount, label };
 }
 
+/**
+ * Pure function to check if PPP access should be blocked.
+ * Returns blocked=true when a discounted purchase is accessed from a different country.
+ */
+export function checkPppAccess(
+  coursePrice: number,
+  coursePppEnabled: boolean,
+  purchaseCountry: string | null,
+  currentCountry: string | null
+): { blocked: boolean; blockedCountry: string | null; purchaseCountry: string | null } {
+  const result = { blocked: false, blockedCountry: null as string | null, purchaseCountry: null as string | null };
+
+  // Skip: free courses or PPP-disabled courses
+  if (coursePrice <= 0 || !coursePppEnabled) return result;
+
+  // Skip: no purchase country recorded
+  if (!purchaseCountry) return result;
+
+  // Skip: full-price (Tier 1) purchases — no geographic restriction
+  const purchaseTier = getTierForCountry(purchaseCountry);
+  if (purchaseTier === 1) return result;
+
+  // Discounted purchase — verify country match
+  if (currentCountry && currentCountry !== purchaseCountry) {
+    result.blocked = true;
+    result.blockedCountry = currentCountry;
+    result.purchaseCountry = purchaseCountry;
+  }
+
+  return result;
+}
+
 // All countries with their names, for the dev UI dropdown
 export const COUNTRIES: { code: string; name: string }[] = [
   { code: "AR", name: "Argentina" },

@@ -43,7 +43,7 @@ import { renderMarkdown } from "~/lib/markdown.server";
 import { YouTubePlayer } from "~/components/youtube-player";
 import { data, isRouteErrorResponse } from "react-router";
 import { resolveCountry } from "~/lib/country.server";
-import { getTierForCountry, COUNTRIES } from "~/lib/ppp";
+import { checkPppAccess, COUNTRIES } from "~/lib/ppp";
 import { findPurchase } from "~/services/purchaseService";
 
 export function meta({ data: loaderData }: Route.MetaArgs) {
@@ -153,25 +153,22 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   }
 
   // PPP Access Guard
-  // Skip for: free courses, non-PPP courses, full-price (Tier 1) purchases
   let pppBlocked = false;
   let pppBlockedCountry: string | null = null;
   let pppPurchaseCountry: string | null = null;
 
-  if (enrolled && currentUserId && course.price > 0 && course.pppEnabled) {
+  if (enrolled && currentUserId) {
     const purchase = findPurchase(currentUserId, course.id);
-    if (purchase && purchase.country) {
-      const purchaseTier = getTierForCountry(purchase.country);
-      if (purchaseTier > 1) {
-        // This was a discounted purchase — verify country match
-        const currentCountry = await resolveCountry(request);
-        if (currentCountry && currentCountry !== purchase.country) {
-          pppBlocked = true;
-          pppBlockedCountry = currentCountry;
-          pppPurchaseCountry = purchase.country;
-        }
-      }
-    }
+    const currentCountry = await resolveCountry(request);
+    const pppResult = checkPppAccess(
+      course.price,
+      course.pppEnabled,
+      purchase?.country ?? null,
+      currentCountry
+    );
+    pppBlocked = pppResult.blocked;
+    pppBlockedCountry = pppResult.blockedCountry;
+    pppPurchaseCountry = pppResult.purchaseCountry;
   }
 
   // Render lesson content from Markdown to HTML server-side
