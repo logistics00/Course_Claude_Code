@@ -34,6 +34,8 @@ import {
   moveLessonToModule,
 } from "~/services/lessonService";
 import { getEnrollmentCountForCourse, getCourseEnrolledStudents } from "~/services/enrollmentService";
+import { getAverageRating } from "~/services/ratingService";
+import { StarRatingDisplay } from "~/components/ui/star-rating";
 import { calculateProgress } from "~/services/progressService";
 import { getQuizByLessonId, getBestAttempt } from "~/services/quizService";
 import { getCurrentUserId } from "~/lib/session";
@@ -184,8 +186,9 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   });
 
   const quizCount = lessonQuizzes.length;
+  const ratingData = getAverageRating(courseId);
 
-  return { course, lessonCount, enrollmentCount, students, quizCount };
+  return { course, lessonCount, enrollmentCount, students, quizCount, ratingAverage: ratingData.average, ratingCount: ratingData.count };
 }
 
 export async function action({ params, request }: Route.ActionArgs) {
@@ -984,7 +987,7 @@ function statusBadgeColor(status: string) {
 export default function InstructorCourseEditor({
   loaderData,
 }: Route.ComponentProps) {
-  const { course, lessonCount, enrollmentCount, students, quizCount } = loaderData;
+  const { course, lessonCount, enrollmentCount, students, quizCount, ratingAverage, ratingCount } = loaderData;
   const statusFetcher = useFetcher();
   const reorderFetcher = useFetcher();
   const lessonReorderFetcher = useFetcher();
@@ -1168,6 +1171,7 @@ export default function InstructorCourseEditor({
             {enrollmentCount}{" "}
             {enrollmentCount === 1 ? "student" : "students"}
           </span>
+          <StarRatingDisplay average={ratingAverage} count={ratingCount} />
           <span className="text-xs text-muted-foreground">
             Slug: /courses/{course.slug}
           </span>

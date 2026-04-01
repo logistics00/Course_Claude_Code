@@ -42,6 +42,8 @@ import { formatDuration, formatPrice } from "~/lib/utils";
 import { renderMarkdown } from "~/lib/markdown.server";
 import { resolveCountry } from "~/lib/country.server";
 import { calculatePppPrice, getCountryTierInfo } from "~/lib/ppp";
+import { getAverageRating, getRating } from "~/services/ratingService";
+import { StarRatingDisplay, StarRatingInteractive } from "~/components/ui/star-rating";
 
 export function meta({ data: loaderData }: Route.MetaArgs) {
   const title = loaderData?.course?.title ?? "Course";
@@ -102,6 +104,11 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     : courseWithDetails.price;
   const tierInfo = getCountryTierInfo(country);
 
+  const ratingData = getAverageRating(course.id);
+  const userRating = currentUserId && enrolled
+    ? getRating(currentUserId, course.id)?.rating ?? null
+    : null;
+
   return {
     course: courseWithDetails,
     salesCopyHtml,
@@ -113,6 +120,9 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     currentUserId,
     pppPrice,
     tierInfo,
+    ratingAverage: ratingData.average,
+    ratingCount: ratingData.count,
+    userRating,
   };
 }
 
@@ -181,6 +191,9 @@ export default function CourseDetail({ loaderData }: Route.ComponentProps) {
     currentUserId,
     pppPrice,
     tierInfo,
+    ratingAverage,
+    ratingCount,
+    userRating,
   } = loaderData;
   const isInstructor = currentUserId === course.instructorId;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -320,7 +333,16 @@ export default function CourseDetail({ loaderData }: Route.ComponentProps) {
               {formatDuration(totalDuration, true, false, false)} total
             </span>
           )}
+          <StarRatingDisplay average={ratingAverage} count={ratingCount} size="md" />
         </div>
+        {enrolled && (
+          <div className="mt-3">
+            <StarRatingInteractive
+              courseId={course.id}
+              currentRating={userRating}
+            />
+          </div>
+        )}
       </div>
 
       {/* Two-column: sales copy left, sidebar right */}
