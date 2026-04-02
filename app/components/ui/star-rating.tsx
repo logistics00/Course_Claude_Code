@@ -40,12 +40,24 @@ export function StarRatingDisplay({
         {Array.from({ length: 5 }).map((_, i) => {
           const filled = i < Math.floor(average);
           const partial = !filled && i < average;
+          const fraction = partial ? average - Math.floor(average) : 0;
+          if (partial) {
+            return (
+              <span key={i} className="relative">
+                <Star className={cn(starSize, "text-muted-foreground/30")} />
+                <Star
+                  className={cn(starSize, "absolute inset-0 fill-amber-400 text-amber-400")}
+                  style={{ clipPath: `inset(0 ${(1 - fraction) * 100}% 0 0)` }}
+                />
+              </span>
+            );
+          }
           return (
             <Star
               key={i}
               className={cn(
                 starSize,
-                filled || partial
+                filled
                   ? "fill-amber-400 text-amber-400"
                   : "text-muted-foreground/30"
               )}
@@ -63,7 +75,7 @@ export function StarRatingDisplay({
 interface StarRatingInteractiveProps {
   courseId: number;
   currentRating: number | null;
-  onRated?: (average: number, count: number) => void;
+  onRated?: (average: number, count: number, rating: number | null) => void;
 }
 
 export function StarRatingInteractive({
@@ -79,6 +91,11 @@ export function StarRatingInteractive({
 
   async function handleClick(star: number) {
     if (isSubmitting) return;
+
+    if (star === rating) {
+      return handleDelete();
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -96,10 +113,38 @@ export function StarRatingInteractive({
       const result = await response.json();
       setRating(star);
       toast.success(`You rated this course ${star} star${star !== 1 ? "s" : ""}`);
-      onRated?.(result.average, result.count);
+      onRated?.(result.average, result.count, star);
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Failed to submit rating"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleDelete() {
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch("/api/rate-course", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ courseId }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to remove rating");
+      }
+
+      const result = await response.json();
+      setRating(null);
+      toast.success("Your rating has been removed");
+      onRated?.(result.average, result.count, null);
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Failed to remove rating"
       );
     } finally {
       setIsSubmitting(false);
@@ -127,7 +172,7 @@ export function StarRatingInteractive({
               )}
               onMouseEnter={() => setHoveredStar(star)}
               onClick={() => handleClick(star)}
-              aria-label={`Rate ${star} star${star !== 1 ? "s" : ""}`}
+              aria-label={star === rating ? `Remove your ${star}-star rating` : `Rate ${star} star${star !== 1 ? "s" : ""}`}
             >
               <Star
                 className={cn(
@@ -142,9 +187,20 @@ export function StarRatingInteractive({
         })}
       </div>
       {rating !== null && (
-        <span className="text-sm font-medium text-amber-600">
-          {rating}/5
-        </span>
+        <>
+          <span className="text-sm font-medium text-amber-600">
+            {rating}/5
+          </span>
+          <button
+            type="button"
+            disabled={isSubmitting}
+            onClick={handleDelete}
+            className="text-xs text-muted-foreground hover:text-destructive disabled:opacity-50 transition-colors"
+            title="Remove your rating"
+          >
+            Remove
+          </button>
+        </>
       )}
     </div>
   );

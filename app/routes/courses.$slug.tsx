@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { toast } from "sonner";
 import type { Route } from "./+types/courses.$slug";
@@ -196,6 +196,9 @@ export default function CourseDetail({ loaderData }: Route.ComponentProps) {
     userRating,
   } = loaderData;
   const isInstructor = currentUserId === course.instructorId;
+  const [displayAverage, setDisplayAverage] = useState(ratingAverage);
+  const [displayCount, setDisplayCount] = useState(ratingCount);
+  const [displayUserRating, setDisplayUserRating] = useState(userRating);
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
@@ -333,13 +336,18 @@ export default function CourseDetail({ loaderData }: Route.ComponentProps) {
               {formatDuration(totalDuration, true, false, false)} total
             </span>
           )}
-          <StarRatingDisplay average={ratingAverage} count={ratingCount} size="md" />
+          <StarRatingDisplay average={displayAverage} count={displayCount} size="md" />
         </div>
         {enrolled && (
           <div className="mt-3">
             <StarRatingInteractive
               courseId={course.id}
-              currentRating={userRating}
+              currentRating={displayUserRating}
+              onRated={(average, count, newRating) => {
+                setDisplayAverage(average);
+                setDisplayCount(count);
+                setDisplayUserRating(newRating);
+              }}
             />
           </div>
         )}
