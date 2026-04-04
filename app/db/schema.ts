@@ -300,3 +300,20 @@ export const lessonComments = sqliteTable(
     index("lesson_comments_user_id_idx").on(table.userId),
   ]
 );
+
+export const lessonBookmarks = sqliteTable(
+  "lesson_bookmarks",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    lessonId: integer("lesson_id")
+      .notNull()
+      .references(() => lessons.id),
+    createdAt: text("created_at")
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (table) => [unique().on(table.userId, table.lessonId)]
+);
