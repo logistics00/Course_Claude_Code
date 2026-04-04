@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real, unique } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, unique, index } from "drizzle-orm/sqlite-core";
 
 export enum UserRole {
   Student = "student",
@@ -274,3 +274,29 @@ export const videoWatchEvents = sqliteTable("video_watch_events", {
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
 });
+
+export const lessonComments = sqliteTable(
+  "lesson_comments",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    lessonId: integer("lesson_id")
+      .notNull()
+      .references(() => lessons.id),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id),
+    content: text("content").notNull(),
+    isHidden: integer("is_hidden", { mode: "boolean" }).notNull().default(false),
+    isPinned: integer("is_pinned", { mode: "boolean" }).notNull().default(false),
+    createdAt: text("created_at")
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+    updatedAt: text("updated_at")
+      .notNull()
+      .$defaultFn(() => new Date().toISOString()),
+  },
+  (table) => [
+    index("lesson_comments_lesson_id_idx").on(table.lessonId),
+    index("lesson_comments_user_id_idx").on(table.userId),
+  ]
+);
